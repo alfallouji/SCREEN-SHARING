@@ -1,0 +1,79 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+#stage {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+}
+
+/* Invisible drag handle for the frameless window. -webkit-app-region: drag
+   lets the user move the window by dragging this strip. A faint grip appears
+   only on hover (the local user), so it stays out of the shared picture. */
+.dragbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 34px;
+  z-index: 10;
+  -webkit-app-region: drag;
+}
+.dragbar::after {
+  content: "⋯ drag to move";
+  position: absolute;
+  top: 6px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: rgba(220, 230, 245, 0.0);
+  background: rgba(10, 14, 22, 0.0);
+  padding: 2px 10px;
+  border-radius: 999px;
+  transition: color .15s, background .15s;
+  pointer-events: none;
+}
+.dragbar:hover::after {
+  color: rgba(220, 230, 245, 0.7);
+  background: rgba(10, 14, 22, 0.55);
+}
+
+.placeholder {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #cfd6e4;
+  text-align: center;
+  background: radial-gradient(circle at 50% 40%, #1b2433 0%, #05070b 70%);
+}
+.placeholder.hidden { display: none; }
+
+.ph-box h1 { font-size: 34px; font-weight: 700; margin-bottom: 14px; color: #fff; }
+.ph-box p { font-size: 16px; margin: 6px 0; }
+.ph-box .muted { color: #7e8aa0; font-size: 14px; margin-top: 14px; }
+.ph-box strong { color: #5cc8ff; }
+
+.banner {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  background: rgba(10, 14, 22, 0.82);
+  color: #eaf0fb;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  letter-spacing: 0.2px;
+  border: 1px solid rgba(120, 150, 200, 0.25);
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+.banner.hidden { opacity: 0; }
+.banner.error { background: rgba(70, 20, 24, 0.9); border-color: #b3504f; }

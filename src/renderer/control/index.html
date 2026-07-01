@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; media-src 'self' blob:; style-src 'self'; script-src 'self';" />
+  <title>ScreenDeck — Control</title>
+  <link rel="stylesheet" href="control.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">▦</span>
+      <div>
+        <div class="title">ScreenDeck</div>
+        <div class="subtitle">Share the <strong>Output</strong> window once — switch what it shows with hotkeys.</div>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button id="btn-ontop" class="ghost" title="Keep the Output window above others">Output: on top ✗</button>
+      <button id="btn-frame" class="ghost" title="Hide the Output window's title bar for a cleaner share">Output: frame ✓</button>
+      <button id="btn-focus" class="ghost" title="Bring the Output window to the front">Show Output</button>
+      <button id="btn-deck" class="ghost" title="Open the floating stream-deck to click between screens">Open Deck</button>
+      <span class="divider"></span>
+      <button id="btn-export" class="ghost" title="Save all settings to a file">Save…</button>
+      <button id="btn-import" class="ghost" title="Load settings from a file">Load…</button>
+    </div>
+  </header>
+
+  <div class="transition-bar">
+    <span class="tb-label">Switch transition</span>
+    <label class="tb-field">Style
+      <select id="t-type">
+        <option value="none">None (cut)</option>
+        <option value="fade">Fade (crossfade)</option>
+        <option value="slide-left">Slide left</option>
+        <option value="slide-right">Slide right</option>
+        <option value="slide-up">Slide up</option>
+        <option value="slide-down">Slide down</option>
+      </select>
+    </label>
+    <label class="tb-field tb-speed">Speed
+      <input id="t-duration" type="range" min="0" max="1500" step="50" />
+      <span id="t-duration-val" class="tb-val">400 ms</span>
+    </label>
+    <label class="tb-field">Easing
+      <select id="t-easing">
+        <option value="ease-in-out">Smooth</option>
+        <option value="linear">Linear</option>
+      </select>
+    </label>
+    <button id="t-test" class="ghost tiny" title="Replay the current source using this transition">Test</button>
+  </div>
+
+  <div id="perm-warning" class="warning hidden"></div>
+  <div id="hotkey-warning" class="warning hidden"></div>
+
+  <main class="layout">
+    <!-- Left: the list of shareable screens -->
+    <section class="panel sources">
+      <div class="panel-head">
+        <h2>Shareable screens</h2>
+        <button id="btn-add" class="primary">+ Add</button>
+      </div>
+      <ul id="source-list" class="source-list"></ul>
+      <p id="empty-hint" class="empty-hint">No shareable screens yet. Click <strong>+ Add</strong> to create one and bind it to a window, a region, or a display.</p>
+    </section>
+
+    <!-- Right: the editor for the selected shareable screen -->
+    <section class="panel editor">
+      <div id="editor-empty" class="editor-empty">
+        <p>Select a shareable screen on the left, or add a new one.</p>
+      </div>
+
+      <div id="editor" class="editor-body hidden">
+        <div class="row">
+          <label>Name
+            <input id="f-name" type="text" placeholder="e.g. PowerPoint" />
+          </label>
+          <label class="hotkey-field">Hotkey
+            <input id="f-hotkey" type="text" readonly placeholder="Click, then press keys (e.g. Ctrl+F1)" />
+            <button id="f-hotkey-clear" class="tiny" title="Clear hotkey">✕</button>
+          </label>
+        </div>
+
+        <div class="target-head">
+          <h3>Capture target</h3>
+          <button id="btn-refresh" class="ghost tiny">↻ Refresh list</button>
+        </div>
+        <div id="target-grid" class="target-grid"></div>
+
+        <div class="crop-head">
+          <h3>Region</h3>
+          <div class="crop-actions">
+            <span id="crop-label" class="crop-label">Whole target</span>
+            <button id="btn-whole" class="ghost tiny">Use whole target</button>
+          </div>
+        </div>
+        <div id="crop-stage" class="crop-stage">
+          <div id="crop-empty" class="crop-empty">Pick a target above to draw a region (drag a rectangle), or share the whole thing.</div>
+          <div id="crop-wrap" class="crop-wrap hidden">
+            <video id="crop-video" muted playsinline></video>
+            <div id="crop-overlay" class="crop-overlay"></div>
+          </div>
+        </div>
+
+        <div class="editor-foot">
+          <button id="btn-activate" class="primary">▶ Show in Output</button>
+          <button id="btn-delete" class="danger">Delete</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="control.js"></script>
+</body>
+</html>

@@ -1,0 +1,620 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #14161c;
+  --panel: #1b1f29;
+  --panel-2: #222734;
+  --line: #2c3342;
+  --text: #e7ecf5;
+  --muted: #8b97ad;
+  --accent: #5cc8ff;
+  --accent-2: #3a7bd5;
+  --danger: #e0574f;
+  --ok: #46c98b;
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 14px;
+}
+
+/* Fill the viewport exactly and let the two panels own their own scrolling, so
+   the page itself never overflows into a phantom vertical scrollbar. */
+body {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.topbar,
+.transition-bar,
+.warning {
+  flex: 0 0 auto;
+}
+
+/* Top bar -------------------------------------------------------------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  font-size: 26px;
+  color: var(--accent);
+  background: var(--panel-2);
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.subtitle {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.subtitle strong {
+  color: var(--accent);
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.divider {
+  width: 1px;
+  height: 22px;
+  background: var(--line);
+  margin: 0 4px;
+}
+
+/* Buttons -------------------------------------------------------------- */
+button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 8px 14px;
+  color: var(--text);
+  background: var(--panel-2);
+  transition: background .15s, border-color .15s;
+}
+
+button:hover {
+  background: #2a3140;
+}
+
+button.primary {
+  background: var(--accent-2);
+  border-color: #4f8fe0;
+  color: #fff;
+}
+
+button.primary:hover {
+  background: #4886db;
+}
+
+button.ghost {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--muted);
+}
+
+button.ghost:hover {
+  color: var(--text);
+  border-color: #3a4456;
+}
+
+button.danger {
+  background: transparent;
+  border: 1px solid #5a2c2a;
+  color: var(--danger);
+}
+
+button.danger:hover {
+  background: #2a1716;
+}
+
+button.tiny {
+  padding: 4px 9px;
+  font-size: 12px;
+}
+
+button.active-state {
+  background: var(--ok);
+  border-color: var(--ok);
+  color: #06281a;
+}
+
+/* Transition bar ------------------------------------------------------- */
+.transition-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 9px 18px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.tb-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: .3px;
+  text-transform: uppercase;
+}
+
+.tb-field {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.tb-field select {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 6px 9px;
+  color: var(--text);
+  font: inherit;
+}
+
+.tb-field select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.tb-speed input[type="range"] {
+  width: 150px;
+  accent-color: var(--accent);
+}
+
+.tb-val {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  min-width: 56px;
+}
+
+/* Warning banner ------------------------------------------------------- */
+.warning {
+  margin: 10px 18px 0;
+  padding: 9px 14px;
+  border-radius: 8px;
+  background: #3a2410;
+  border: 1px solid #7a5320;
+  color: #ffce8a;
+  font-size: 13px;
+}
+
+.warning.hidden {
+  display: none;
+}
+
+/* Layout --------------------------------------------------------------- */
+.layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 14px;
+  padding: 14px 18px;
+  flex: 1 1 auto;
+  min-height: 0; /* allow the panels to shrink and scroll instead of growing the page */
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  overflow: auto;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.panel-head h2 {
+  font-size: 15px;
+}
+
+/* Source list ---------------------------------------------------------- */
+.source-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.source-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  background: var(--panel-2);
+  border: 1px solid transparent;
+}
+
+.source-item:hover {
+  border-color: #36405380;
+}
+
+.source-item.selected {
+  border-color: var(--accent);
+}
+
+.source-item.active {
+  box-shadow: inset 3px 0 0 var(--ok);
+}
+
+.si-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.si-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.si-target {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.si-hotkey {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--accent);
+  background: #10202c;
+  padding: 3px 7px;
+  border-radius: 6px;
+  border: 1px solid #1d3a4d;
+  white-space: nowrap;
+}
+
+.si-unbound {
+  color: #ffb24d;
+  font-size: 11px;
+}
+
+/* Per-item delete: subtle until the row is hovered/selected. */
+.si-del {
+  flex: 0 0 auto;
+  padding: 2px 7px;
+  font-size: 12px;
+  line-height: 1;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity .12s, color .12s, border-color .12s, background .12s;
+}
+
+.source-item:hover .si-del,
+.source-item.selected .si-del {
+  opacity: 1;
+}
+
+.si-del:hover {
+  background: #2a1716;
+  border-color: #5a2c2a;
+  color: var(--danger);
+}
+
+/* Drag-to-reorder feedback. */
+.source-item.dragging {
+  opacity: .5;
+}
+
+.source-item.drop-target {
+  border-color: var(--accent);
+  box-shadow: 0 -2px 0 var(--accent) inset;
+}
+
+.empty-hint {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 10px;
+  line-height: 1.5;
+}
+
+.empty-hint.hidden {
+  display: none;
+}
+
+/* Editor --------------------------------------------------------------- */
+.editor-empty {
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  height: 100%;
+}
+
+.editor-body.hidden,
+.editor-empty.hidden {
+  display: none;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--muted);
+  flex: 1;
+}
+
+input[type="text"] {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 11px;
+  color: var(--text);
+  font: inherit;
+}
+
+input[type="text"]:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.hotkey-field {
+  position: relative;
+}
+
+.hotkey-field #f-hotkey-clear {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  padding: 4px 6px;
+}
+
+.target-head,
+.crop-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 6px 0 10px;
+}
+
+.target-head h3,
+.crop-head h3 {
+  font-size: 13.5px;
+}
+
+/* Make the refresh control obvious and give it a clear busy/done state. */
+#btn-refresh {
+  color: var(--accent);
+  border-color: #244a63;
+  font-weight: 600;
+}
+
+#btn-refresh:hover {
+  background: #14304a;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+#btn-refresh:disabled {
+  cursor: default;
+}
+
+#btn-refresh.spinning {
+  color: var(--muted);
+  border-color: var(--line);
+}
+
+.crop-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.crop-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.target-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+  max-height: 230px;
+  overflow: auto;
+  padding: 2px;
+}
+
+/* Rebind banner spanning the grid: prompts an app-scoped re-pick. */
+.rebind-banner {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #2a2410;
+  border: 1px solid #6a5320;
+  color: #ffce8a;
+  font-size: 12.5px;
+}
+
+.rebind-banner strong {
+  color: #ffe2ad;
+}
+
+/* Full-width "nothing to show" note inside the target grid. */
+.target-empty {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 12.5px;
+  padding: 10px 2px;
+}
+
+/* Full-width separator heading between the Displays and Windows groups. */
+.target-group {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--muted);
+  padding: 8px 2px 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+.target-group:first-child {
+  padding-top: 2px;
+}
+
+.tile {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #0e1118;
+  display: flex;
+  flex-direction: column;
+}
+
+.tile:hover {
+  border-color: #3a4456;
+}
+
+.tile.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.tile img {
+  width: 100%;
+  height: 86px;
+  object-fit: cover;
+  background: #000;
+  display: block;
+}
+
+.tile .cap {
+  padding: 6px 8px;
+  font-size: 11.5px;
+}
+
+.tile .cap .nm {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tile .cap .ty {
+  color: var(--muted);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+
+/* Crop stage ----------------------------------------------------------- */
+.crop-stage {
+  background: #0e1118;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  display: grid;
+  place-items: center;
+  min-height: 180px;
+}
+
+.crop-empty {
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+  padding: 20px;
+}
+
+.crop-wrap {
+  position: relative;
+  line-height: 0;
+}
+
+.crop-wrap.hidden {
+  display: none;
+}
+
+.crop-wrap video {
+  display: block;
+  max-width: 100%;
+  border-radius: 6px;
+}
+
+.crop-overlay {
+  position: absolute;
+  inset: 0;
+  cursor: crosshair;
+}
+
+.crop-rect {
+  position: absolute;
+  border: 2px solid var(--accent);
+  background: rgba(92, 200, 255, 0.16);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+}
+
+.editor-foot {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.editor-foot .danger {
+  margin-left: auto;
+}

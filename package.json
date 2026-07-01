@@ -1,0 +1,51 @@
+{
+  "name": "screendeck",
+  "version": "1.0.0",
+  "description": "A driver-free screen-share source switcher for Windows & macOS. Share one Output window in your meeting; switch what it shows with hotkeys or a floating deck.",
+  "private": true,
+  "author": "ScreenDeck",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "node scripts/start.js",
+    "start:verbose": "electron .",
+    "pack": "node scripts/prepare-build.js && electron-builder --dir",
+    "dist": "node scripts/prepare-build.js && electron-builder",
+    "dist:win": "node scripts/prepare-build.js && electron-builder --win",
+    "dist:mac": "electron-builder --mac"
+  },
+  "build": {
+    "appId": "com.screendeck.app",
+    "productName": "ScreenDeck",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "ScreenDeck"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.productivity"
+    }
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  }
+}

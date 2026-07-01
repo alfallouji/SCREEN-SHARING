@@ -1,0 +1,139 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0e1118;
+  --tile: #1b1f29;
+  --tile-2: #232838;
+  --line: #2c3342;
+  --text: #e7ecf5;
+  --muted: #93a0b6;
+  --accent: #5cc8ff;
+  --ok: #46c98b;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, sans-serif;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Draggable header ----------------------------------------------------- */
+.deckbar {
+  -webkit-app-region: drag;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 30px;
+  padding: 0 6px 0 10px;
+  background: #11151d;
+  border-bottom: 1px solid var(--line);
+  cursor: move;
+}
+.dk-title { font-size: 12px; font-weight: 600; color: var(--accent); letter-spacing: .3px; }
+.dk-pin {
+  -webkit-app-region: no-drag;
+  border: none; background: transparent; cursor: pointer;
+  font-size: 13px; line-height: 1; padding: 4px 6px; border-radius: 6px;
+  filter: grayscale(1) opacity(0.5);
+}
+.dk-pin:hover { background: #20283a; }
+.dk-pin.on { filter: none; background: #14304a; }
+
+/* Responsive button grid ---------------------------------------------- */
+.grid {
+  -webkit-app-region: no-drag;
+  height: calc(100% - 30px);
+  overflow-y: auto;
+  display: grid;
+  /* auto-fit (not auto-fill) collapses empty tracks so the tiles stretch to
+     fill the window width — previews grow to their max as you resize. */
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  grid-auto-rows: min-content;
+  gap: 8px;
+  padding: 8px;
+  align-content: start;
+}
+
+.tile {
+  -webkit-app-region: no-drag;
+  position: relative;
+  border: 1px solid var(--line);
+  background: var(--tile);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  transition: border-color .12s, transform .06s, box-shadow .12s;
+}
+.tile:hover { border-color: #3c4a63; }
+.tile:active { transform: scale(0.97); }
+.tile.active {
+  border-color: var(--ok);
+  box-shadow: 0 0 0 1px var(--ok), 0 0 14px rgba(70, 201, 139, 0.35);
+}
+
+/* Preview area scales with the tile width (responsive). */
+.thumb {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: #05070b center/cover no-repeat;
+  border-bottom: 1px solid var(--line);
+}
+.tile.unbound .thumb {
+  display: flex; align-items: center; justify-content: center;
+  background: repeating-linear-gradient(45deg, #161a24, #161a24 8px, #1b2030 8px, #1b2030 16px);
+}
+.thumb .ph { font-size: 11px; color: #ffb24d; padding: 4px; text-align: center; }
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  min-height: 30px;
+}
+.nm {
+  flex: 1; min-width: 0;
+  font-size: clamp(11px, 2.6vw, 13px);
+  font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* Hotkey badge overlaid at the top-center of the preview. */
+.hk {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  font-size: 10px; font-weight: 700; color: var(--accent);
+  background: rgba(8, 16, 24, 0.82);
+  border: 1px solid #1d3a4d;
+  padding: 2px 7px; border-radius: 5px; white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+}
+
+/* Active dot in the corner of the preview. */
+.dot {
+  position: absolute; top: 6px; right: 6px;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--ok); box-shadow: 0 0 8px var(--ok);
+  opacity: 0; transition: opacity .12s;
+}
+.tile.active .dot { opacity: 1; }
+
+.empty {
+  position: fixed; inset: 30px 0 0 0;
+  display: flex; align-items: center; justify-content: center;
+  text-align: center; color: var(--muted); font-size: 13px; line-height: 1.6;
+  padding: 20px;
+}
+.empty.hidden { display: none; }
+.empty strong { color: var(--accent); }

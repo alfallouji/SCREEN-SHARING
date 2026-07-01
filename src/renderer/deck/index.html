@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self';" />
+  <title>ScreenDeck — Deck</title>
+  <link rel="stylesheet" href="deck.css" />
+</head>
+<body>
+  <!-- Drag strip: frameless window is moved by dragging this header. -->
+  <header id="deckbar" class="deckbar">
+    <span class="dk-title">▦ ScreenDeck</span>
+    <button id="dk-pin" class="dk-pin" title="Keep deck on top of other windows">📌</button>
+  </header>
+
+  <main id="grid" class="grid"></main>
+
+  <div id="empty" class="empty hidden">
+    No shareable screens yet.<br />Add them in the <strong>Control</strong> window.
+  </div>
+
+  <script src="deck.js"></script>
+</body>
+</html>

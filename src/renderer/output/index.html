@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; media-src 'self' blob:; style-src 'self'; script-src 'self';" />
+  <title>ScreenDeck — SHARE THIS WINDOW</title>
+  <link rel="stylesheet" href="output.css" />
+</head>
+<body>
+  <!-- Frameless windows can't be moved by an OS title bar; this transparent
+       strip is a draggable handle so the user can still reposition the window.
+       It's invisible, so it never shows up in the shared view. -->
+  <div id="dragbar" class="dragbar" title="Drag to move ScreenDeck"></div>
+  <canvas id="stage"></canvas>
+  <div id="placeholder" class="placeholder">
+    <div class="ph-box">
+      <h1>ScreenDeck Output</h1>
+      <p>Share <strong>this window</strong> in Zoom / Teams / Meet.</p>
+      <p class="muted">Then press your hotkeys (Ctrl+F1, Ctrl+F2, …) to switch what appears here.</p>
+    </div>
+  </div>
+  <div id="banner" class="banner hidden"></div>
+  <script src="output.js"></script>
+</body>
+</html>
