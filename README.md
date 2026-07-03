@@ -24,7 +24,7 @@ VS Code ────┘        ▲ Ctrl+F1 / F2 / F3 switch which one is shown
 Requires [Node.js](https://nodejs.org) (18+).
 
 ```bash
-cd j:\code\sonar\screen-sharing
+cd j:\code\screen-sharing
 npm install      # downloads Electron (~once)
 npm start
 ```
