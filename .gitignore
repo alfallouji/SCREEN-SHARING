@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+
+# electron-builder output (see build.directories.output in package.json)
+dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS cruft
+.DS_Store
+Thumbs.db
