@@ -1,6 +1,6 @@
 {
   "name": "screendeck",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A driver-free screen-share source switcher for Windows & macOS. Share one Output window in your meeting; switch what it shows with hotkeys or a floating deck.",
   "private": true,
   "author": "ScreenDeck",
