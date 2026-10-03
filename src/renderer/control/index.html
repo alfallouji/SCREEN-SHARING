@@ -51,6 +51,25 @@
     <button id="t-test" class="ghost tiny" title="Replay the current source using this transition">Test</button>
   </div>
 
+  <div class="transition-bar">
+    <span class="tb-label">Output border</span>
+    <label class="tb-field tb-check" title="Draw an outline around the shared picture">
+      <input id="b-enabled" type="checkbox" /> Show
+    </label>
+    <label class="tb-field tb-speed">Width
+      <input id="b-width" type="range" min="0" max="40" step="1" />
+      <span id="b-width-val" class="tb-val">4 px</span>
+    </label>
+    <label class="tb-field">Colour
+      <input id="b-color" type="color" />
+    </label>
+    <span class="divider"></span>
+    <span class="tb-label">On activate</span>
+    <label class="tb-field tb-check" title="Windows only. Restores, centres and resizes the captured window whenever you switch to it.">
+      <input id="s-snap" type="checkbox" /> Bring the captured window to the front, centred at its saved size
+    </label>
+  </div>
+
   <div id="perm-warning" class="warning hidden"></div>
   <div id="hotkey-warning" class="warning hidden"></div>
 
@@ -84,7 +103,11 @@
 
         <div class="target-head">
           <h3>Capture target</h3>
-          <button id="btn-refresh" class="ghost tiny">↻ Refresh list</button>
+          <div class="target-actions">
+            <span id="snap-size" class="snap-size"></span>
+            <button id="btn-remeasure" class="ghost tiny" title="Remember this window's size as it is right now — activating this screen will restore it">Use current size</button>
+            <button id="btn-refresh" class="ghost tiny">↻ Refresh list</button>
+          </div>
         </div>
         <div id="target-grid" class="target-grid"></div>
 

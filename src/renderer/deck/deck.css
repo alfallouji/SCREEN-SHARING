@@ -86,11 +86,14 @@ html, body {
   background: #05070b center/cover no-repeat;
   border-bottom: 1px solid var(--line);
 }
-.tile.unbound .thumb {
+.tile.unbound .thumb,
+.tile.minimized .thumb {
   display: flex; align-items: center; justify-content: center;
   background: repeating-linear-gradient(45deg, #161a24, #161a24 8px, #1b2030 8px, #1b2030 16px);
 }
 .thumb .ph { font-size: 11px; color: #ffb24d; padding: 4px; text-align: center; }
+/* Minimized is a normal, recoverable state — not a problem like unbound is. */
+.tile.minimized .thumb .ph { color: #8b97ad; }
 
 .meta {
   display: flex;

@@ -23,6 +23,11 @@ function defaultConfig() {
       frameless: true,      // hide the OS title bar by default for a clean share
       width: 1280,
       height: 720,
+      border: {             // outline drawn around the shared picture
+        enabled: true,
+        width: 4,           // CSS pixels; 0 is the same as disabled
+        color: '#ffffff',
+      },
     },
     transition: {
       type: 'fade',         // 'none' | 'fade' | 'slide-left' | 'slide-right' | 'slide-up' | 'slide-down'
@@ -36,6 +41,9 @@ function defaultConfig() {
       width: 360,
       height: 360,
     },
+    // Windows only: on activation, also centre the captured window on the
+    // primary display at the size remembered when the source was bound.
+    snapOnActivate: true,
     activeSourceId: null,
   };
 }
@@ -47,23 +55,30 @@ function configPath() {
 /** Read config from disk, falling back to defaults on missing/corrupt file. */
 function loadConfig() {
   const file = configPath();
+  const base = defaultConfig();
   try {
     const raw = fs.readFileSync(file, 'utf8');
     const parsed = JSON.parse(raw);
     // Shallow-merge onto defaults so older/partial files gain new fields.
     return {
-      ...defaultConfig(),
+      ...base,
       ...parsed,
-      output: { ...defaultConfig().output, ...parsed.output },
-      transition: { ...defaultConfig().transition, ...parsed.transition },
-      deck: { ...defaultConfig().deck, ...parsed.deck },
+      output: {
+        ...base.output,
+        ...parsed.output,
+        // One level deeper, so a file written before borders existed still gets
+        // the default outline rather than an empty object.
+        border: { ...base.output.border, ...(parsed.output && parsed.output.border) },
+      },
+      transition: { ...base.transition, ...parsed.transition },
+      deck: { ...base.deck, ...parsed.deck },
       sources: Array.isArray(parsed.sources) ? parsed.sources : [],
     };
   } catch (err) {
     if (err.code !== 'ENOENT') {
       console.error('[config] could not read config, using defaults:', err.message);
     }
-    return defaultConfig();
+    return base;
   }
 }
 

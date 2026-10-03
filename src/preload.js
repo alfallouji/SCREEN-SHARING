@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('screendeck', {
   getConfig: () => ipcRenderer.invoke('config:get'),
   saveConfig: (config) => ipcRenderer.invoke('config:save', config),
   activate: (sourceId) => ipcRenderer.invoke('source:activate', sourceId),
+  getWindowRect: (hwnd) => ipcRenderer.invoke('window:rect', hwnd),
   toggleOnTop: () => ipcRenderer.invoke('output:toggleOnTop'),
   toggleFrame: () => ipcRenderer.invoke('output:toggleFrame'),
   focusOutput: () => ipcRenderer.invoke('output:focus'),
@@ -33,6 +34,7 @@ contextBridge.exposeInMainWorld('screendeck', {
 
   // --- events (main -> renderer) ---
   onShow: (cb) => ipcRenderer.on('output:show', (_e, payload) => cb(payload)),
+  onOutputStyle: (cb) => ipcRenderer.on('output:style', (_e, payload) => cb(payload)),
   onUnbound: (cb) => ipcRenderer.on('output:unbound', (_e, payload) => cb(payload)),
   onActive: (cb) => ipcRenderer.on('control:active', (_e, payload) => cb(payload)),
   onHotkeysStatus: (cb) => ipcRenderer.on('hotkeys:status', (_e, payload) => cb(payload)),

@@ -8,10 +8,24 @@ html, body {
   font-family: "Segoe UI", system-ui, sans-serif;
 }
 
+/* The bordered frame around the shared picture. Width and colour come from
+   config.output.border at runtime (see applyBorder in output.js); the
+   global border-box sizing means the canvas shrinks to fit inside it rather
+   than being overlapped by it. */
+.frame {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #000;
+  border-style: solid;
+  border-width: 0;
+  border-color: #fff;
+}
+
 #stage {
   display: block;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   background: #000;
 }
 
@@ -19,7 +33,7 @@ html, body {
    lets the user move the window by dragging this strip. A faint grip appears
    only on hover (the local user), so it stays out of the shared picture. */
 .dragbar {
-  position: fixed;
+  position: absolute;
   top: 0; left: 0; right: 0;
   height: 34px;
   z-index: 10;
@@ -44,7 +58,7 @@ html, body {
 }
 
 .placeholder {
-  position: fixed;
+  position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
@@ -61,7 +75,7 @@ html, body {
 .ph-box strong { color: #5cc8ff; }
 
 .banner {
-  position: fixed;
+  position: absolute;
   left: 50%;
   bottom: 22px;
   transform: translateX(-50%);

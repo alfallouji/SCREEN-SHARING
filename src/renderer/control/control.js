@@ -35,6 +35,13 @@ const tType = $('t-type');
 const tDuration = $('t-duration');
 const tDurationVal = $('t-duration-val');
 const tEasing = $('t-easing');
+const bEnabled = $('b-enabled');
+const bWidth = $('b-width');
+const bWidthVal = $('b-width-val');
+const bColor = $('b-color');
+const sSnap = $('s-snap');
+const snapSize = $('snap-size');
+const btnRemeasure = $('btn-remeasure');
 
 // --- Helpers ---------------------------------------------------------------
 const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : 'id-' + Date.now() + '-' + Math.round(Math.random() * 1e6));
@@ -51,6 +58,7 @@ async function persist() {
     sources: config.sources,
     output: config.output,
     transition: config.transition,
+    snapOnActivate: config.snapOnActivate,
     activeSourceId: config.activeSourceId,
   });
 }
@@ -225,10 +233,64 @@ async function refreshTargets() {
   renderList(); // bound/unbound badges may change
 }
 
+/**
+ * Remember how big the captured window is *right now*.
+ *
+ * A region is stored normalized (0..1) against the captured frame, so it only
+ * means the right thing at the size the window had when it was drawn — resize
+ * the window afterwards and the same fractions cover different content. That
+ * is why this is re-recorded every time a region is committed, not just when
+ * the target is first bound. Activation then restores this size, which is what
+ * keeps the region pointed at the content it was drawn around.
+ *
+ * Windows only — elsewhere getWindowRect always resolves to null and the size
+ * is simply never recorded.
+ */
+async function recordWindowSize(s, target) {
+  if (!s || s.capture !== 'window') return;
+  const t = target || targets.find((x) => x.id === s.lastSourceId);
+  if (!t || !t.hwnd) return;
+  const rect = await api.getWindowRect(t.hwnd);
+  if (!rect) return;
+  if (!s.match) s.match = {}; // hand-edited or imported configs may omit it
+  s.match.windowSize = { width: rect.width, height: rect.height };
+}
+
+/**
+ * Report the size activating this screen will restore the window to, and
+ * enable re-recording it. Window sources on Windows only — a display can't be
+ * moved, and the Win32 snap doesn't exist on other platforms.
+ */
+function renderSnapInfo(s) {
+  const applies = s.capture === 'window' && api.platform === 'win32';
+  snapSize.classList.toggle('hidden', !applies);
+  btnRemeasure.classList.toggle('hidden', !applies);
+  if (!applies) return;
+  const size = s.match?.windowSize;
+  if (!size) {
+    snapSize.textContent = 'Activating centres it at whatever size it has';
+  } else {
+    snapSize.textContent = s.crop
+      ? `Region drawn at ${size.width}×${size.height} — restored on activate`
+      : `Activating restores ${size.width}×${size.height}`;
+  }
+  // Re-measuring needs the window to be in the current live list.
+  btnRemeasure.disabled = !targets.some((t) => t.id === s.lastSourceId && t.hwnd);
+}
+
+btnRemeasure.addEventListener('click', async () => {
+  const s = getSource(selectedId);
+  if (!s) return;
+  await recordWindowSize(s);
+  await persist();
+  renderSnapInfo(s);
+});
+
 function renderTargetGrid() {
   targetGrid.innerHTML = '';
   const s = getSource(selectedId);
   if (!s) return;
+  renderSnapInfo(s); // covers select, re-target and list-refresh alike
 
   const addHeader = (label, count) => {
     const h = document.createElement('div');
@@ -250,7 +312,10 @@ function renderTargetGrid() {
   };
 
   const screens = targets.filter((t) => t.type === 'screen');
-  let windows = targets.filter((t) => t.type === 'window');
+  // Minimized windows are listed so a source isn't wrongly flagged as needing a
+  // re-bind, but they can't be captured or previewed until they're restored, so
+  // they aren't offered as something to pick here.
+  let windows = targets.filter((t) => t.type === 'window' && !t.minimized);
 
   // Rebind assist: when a window source can't re-bind to its remembered target,
   // narrow the window list to other windows of the same app so the user can
@@ -305,11 +370,19 @@ async function chooseTarget(t) {
   const sameApp = t.type === 'window' && !!s.match?.processName && t.processName &&
     t.processName.toLowerCase() === s.match.processName.toLowerCase();
 
+  const prevSize = s.match?.windowSize;
   s.capture = t.type;
   s.lastSourceId = t.id;
   s.match = t.type === 'screen'
     ? { displayId: t.displayId }
     : { windowTitle: t.name, processName: t.processName || null };
+  if (sameApp && s.crop && prevSize) {
+    // The region survives a same-app re-bind, so the size it was drawn at has
+    // to survive with it — the replacement window gets resized to match.
+    s.match.windowSize = prevSize;
+  } else {
+    await recordWindowSize(s, t);
+  }
   // If the name is still the default, adopt the target's name for convenience.
   if (!s.name || s.name === 'New screen') {
     s.name = t.type === 'screen' ? (t.name || 'Display') : t.name;
@@ -401,7 +474,10 @@ window.addEventListener('mouseup', async (e) => {
   const s = getSource(selectedId);
   s.crop = rect;
   cropLabel.textContent = formatCrop(rect);
+  // The region is only valid at the size the window has at this moment.
+  await recordWindowSize(s);
   await persist();
+  renderSnapInfo(s);
   renderList();
   // If this source is live in Output, refresh it with the new crop.
   if (activeId === s.id) api.activate(s.id);
@@ -568,10 +644,48 @@ $('t-test').addEventListener('click', () => {
   if (id) api.activate(id);
 });
 
+// --- Output border + window snapping --------------------------------------
+function syncOutputStyleControls() {
+  const b = config.output.border || {};
+  const width = b.width ?? 4;
+  bEnabled.checked = b.enabled !== false;
+  bWidth.value = String(width);
+  bWidthVal.textContent = width + ' px';
+  bColor.value = b.color || '#ffffff';
+  bWidth.disabled = !bEnabled.checked;
+  bColor.disabled = !bEnabled.checked;
+  // Snapping is a Win32 trick; there's nothing to offer on other platforms.
+  sSnap.checked = config.snapOnActivate !== false;
+  sSnap.disabled = api.platform !== 'win32';
+}
+
+async function updateOutputBorder() {
+  config.output.border = {
+    enabled: bEnabled.checked,
+    width: Number(bWidth.value),
+    color: bColor.value,
+  };
+  bWidthVal.textContent = config.output.border.width + ' px';
+  bWidth.disabled = !bEnabled.checked;
+  bColor.disabled = !bEnabled.checked;
+  await persist(); // main re-pushes the style to the Output window on save
+}
+
+bEnabled.addEventListener('change', updateOutputBorder);
+bColor.addEventListener('change', updateOutputBorder);
+// Label tracks the drag; only the committed value is written to disk.
+bWidth.addEventListener('input', () => { bWidthVal.textContent = bWidth.value + ' px'; });
+bWidth.addEventListener('change', updateOutputBorder);
+
+sSnap.addEventListener('change', async () => {
+  config.snapOnActivate = sSnap.checked;
+  await persist();
+});
+
 $('btn-export').addEventListener('click', () => api.exportConfig());
 $('btn-import').addEventListener('click', async () => {
   const res = await api.importConfig();
-  if (res.ok) { config = res.config; selectedId = null; activeId = config.activeSourceId; editor.classList.add('hidden'); editorEmpty.classList.remove('hidden'); syncOutputButtons(); syncTransitionControls(); await refreshTargets(); renderList(); }
+  if (res.ok) { config = res.config; selectedId = null; activeId = config.activeSourceId; editor.classList.add('hidden'); editorEmpty.classList.remove('hidden'); syncOutputButtons(); syncTransitionControls(); syncOutputStyleControls(); await refreshTargets(); renderList(); }
 });
 
 // --- Events from main ------------------------------------------------------
@@ -623,9 +737,11 @@ function escapeHtml(str) {
   config = await api.getConfig();
   if (!config.output) config.output = {};
   if (!config.transition) config.transition = {};
+  if (!config.output.border) config.output.border = {};
   activeId = config.activeSourceId || null;
   syncOutputButtons();
   syncTransitionControls();
+  syncOutputStyleControls();
   checkScreenPermission();
   await refreshTargets();
   renderList();

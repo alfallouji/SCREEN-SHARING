@@ -9,6 +9,7 @@
  * then promote the incoming layer to be the current one.
  */
 
+const frameEl = document.getElementById('frame');
 const canvas = document.getElementById('stage');
 const ctx = canvas.getContext('2d');
 const placeholder = document.getElementById('placeholder');
@@ -20,13 +21,27 @@ let cur = null;
 let anim = null;
 let bannerTimer = null;
 
+/** Match the drawing buffer to the frame's *inner* box (the window minus the
+ *  border) at device resolution, so the picture is never scaled or clipped. */
 function fitCanvasToWindow() {
   const dpr = window.devicePixelRatio || 1;
-  canvas.width = Math.round(window.innerWidth * dpr);
-  canvas.height = Math.round(window.innerHeight * dpr);
+  canvas.width = Math.max(1, Math.round((canvas.clientWidth || window.innerWidth) * dpr));
+  canvas.height = Math.max(1, Math.round((canvas.clientHeight || window.innerHeight) * dpr));
 }
 window.addEventListener('resize', fitCanvasToWindow);
 fitCanvasToWindow();
+
+/**
+ * Apply the configured outline around the shared picture. Changing the border
+ * resizes the canvas's box without firing a resize event, so refit it here.
+ */
+function applyBorder(border) {
+  const b = border || {};
+  const width = b.enabled === false ? 0 : Math.max(0, Number(b.width) || 0);
+  frameEl.style.borderWidth = width + 'px';
+  frameEl.style.borderColor = b.color || '#ffffff';
+  fitCanvasToWindow();
+}
 
 function showBanner(text, isError = false) {
   banner.textContent = text;
@@ -222,3 +237,9 @@ function unbound({ name }) {
 
 window.screendeck.onShow(show);
 window.screendeck.onUnbound(unbound);
+window.screendeck.onOutputStyle(({ border }) => applyBorder(border));
+
+// Pick up the saved border on load; later changes arrive via onOutputStyle.
+window.screendeck.getConfig()
+  .then((cfg) => applyBorder(cfg && cfg.output && cfg.output.border))
+  .catch(() => {});

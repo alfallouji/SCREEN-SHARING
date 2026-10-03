@@ -16,6 +16,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { loadConfig, saveConfig, configPath } = require('./config');
 const { resolveWindowProcesses } = require('./winProcess');
+const {
+  getWindowRect, placeWindow, restoreWindow, listMinimizedWindows,
+  shutdown: shutdownWinControl,
+} = require('./winControl');
 
 let controlWin = null;
 let outputWin = null;
@@ -99,6 +103,13 @@ function createDeckWindow() {
     }
   });
   deckWin.on('closed', () => { deckWin = null; });
+}
+
+/** Push the Output window's styling (its border) to the Output renderer. */
+function sendOutputStyle() {
+  if (outputWin && !outputWin.isDestroyed()) {
+    outputWin.webContents.send('output:style', { border: config.output.border });
+  }
 }
 
 /** Broadcast which source is active to every window that highlights it. */
@@ -225,33 +236,115 @@ async function listCaptureTargets(opts = {}) {
 }
 
 /**
- * Re-resolve a saved source's live desktopCapturer id. IDs are not stable
+ * Re-resolve a saved source against a live target list. IDs are not stable
  * across runs, so we match on the remembered window title / display id.
- * Returns the live id, or null if the target can't be found right now.
+ * Returns the matching target, or null if it can't be found right now.
  */
-async function resolveLiveId(source, targets) {
+function resolveLiveTarget(source, targets) {
   // Fast path: the id we used last is still present this session.
-  if (source.lastSourceId && targets.some((t) => t.id === source.lastSourceId)) {
-    return source.lastSourceId;
+  if (source.lastSourceId) {
+    const last = targets.find((t) => t.id === source.lastSourceId);
+    if (last) return last;
   }
   const m = source.match || {};
   if (source.capture === 'screen') {
-    const byId = targets.find((t) => t.type === 'screen' && String(t.displayId) === String(m.displayId));
-    if (byId) return byId.id;
-    // Fall back to the first screen so a display source still shows something.
-    const anyScreen = targets.find((t) => t.type === 'screen');
-    return anyScreen ? anyScreen.id : null;
+    return targets.find((t) => t.type === 'screen' && String(t.displayId) === String(m.displayId))
+      // Fall back to the first screen so a display source still shows something.
+      || targets.find((t) => t.type === 'screen')
+      || null;
   }
   // Window: match by remembered title (case-insensitive substring, both ways).
   if (m.windowTitle) {
     const needle = m.windowTitle.toLowerCase();
-    const hit = targets.find((t) => {
+    return targets.find((t) => {
       const name = (t.name || '').toLowerCase();
-      return t.type === 'window' && (name.includes(needle) || needle.includes(name));
-    });
-    if (hit) return hit.id;
+      // An empty title would match every needle, so insist on a real one.
+      return t.type === 'window' && name && (name.includes(needle) || needle.includes(name));
+    }) || null;
   }
   return null;
+}
+
+/**
+ * Dress raw minimized windows up as capture targets, so the same matcher works
+ * on them. They carry no capture id — restoring comes first.
+ *
+ * `withProcess` fills in the owning executable to match what the capture list
+ * provides, which only the Control picker needs. It can cost a PowerShell call
+ * for windows not yet in the session cache, so the frequently-polled deck and
+ * activation paths leave it off.
+ */
+async function shapeMinimized(windows, opts = {}) {
+  const procs = opts.withProcess
+    ? await resolveWindowProcesses(windows.map((w) => w.hwnd))
+    : new Map();
+  return windows.map((w) => {
+    const info = procs.get(String(w.hwnd));
+    return {
+      id: null,
+      name: w.name,
+      type: 'window',
+      hwnd: w.hwnd,
+      minimized: true,
+      thumbnailDataURL: null,
+      displayId: null,
+      bounds: null,
+      processName: info ? info.name : null,
+      exePath: info ? info.path : null,
+    };
+  });
+}
+
+/**
+ * Build a matcher for sources whose window is minimized.
+ *
+ * desktopCapturer never lists a minimized window, so without this a source
+ * whose window is merely minimized is indistinguishable from one whose window
+ * has been closed — and the user gets told to re-bind a source that is fine.
+ *
+ * The Win32 enumeration is deferred until something actually fails to resolve,
+ * and then done once per caller, so the common all-bound case costs nothing.
+ */
+function minimizedMatcher() {
+  let shaped = null;
+  return async (source) => {
+    if (process.platform !== 'win32' || source.capture !== 'window') return null;
+    if (!shaped) shaped = await shapeMinimized(await listMinimizedWindows());
+    if (!shaped.length) return null;
+    // Prefer the remembered HWND: a window keeps it for its whole life, and
+    // unlike the title it doesn't change when the user switches browser tab.
+    const hwnd = hwndFromSourceId(source.lastSourceId);
+    const byHwnd = hwnd && shaped.find((t) => t.hwnd === hwnd);
+    if (byHwnd) return byHwnd;
+    // Otherwise fall back to the title, exactly as the capture list is matched.
+    // (The remembered capture id can never match a minimized entry.)
+    return resolveLiveTarget({ ...source, lastSourceId: null }, shaped);
+  };
+}
+
+/** HWND out of a desktopCapturer window id (`window:<HWND>:<webContentsId>`). */
+function hwndFromSourceId(sourceId) {
+  const m = /^window:(\d+):/.exec(sourceId || '');
+  return m ? m[1] : null;
+}
+
+/**
+ * Bring the captured window to the user: restore it if minimized, resize it to
+ * the size remembered when the source was bound (so a drawn region still lines
+ * up), centre it on the primary display and raise it to the front.
+ *
+ * Best-effort and deliberately *not* awaited: the Output picture should switch
+ * on the same frame as the hotkey, and the capture adapts on its own if the
+ * resize lands a moment later. A failure here never blocks the switch.
+ */
+function snapSourceWindow(source, liveId) {
+  if (process.platform !== 'win32') return;
+  if (!config.snapOnActivate) return;
+  if (source.capture !== 'window') return; // a display can't be moved
+  const hwnd = hwndFromSourceId(liveId);
+  if (!hwnd) return;
+  // No remembered size (source bound before sizes were recorded) -> centre only.
+  placeWindow(hwnd, source.match && source.match.windowSize).catch(() => {});
 }
 
 /** Activate a source by its config id: resolve it live, then push to Output. */
@@ -259,8 +352,25 @@ async function activateSource(sourceId) {
   const source = (config.sources || []).find((s) => s.id === sourceId);
   if (!source) return { ok: false, reason: 'no such source' };
 
-  const targets = await listCaptureTargets();
-  const liveId = await resolveLiveId(source, targets);
+  let targets = await listCaptureTargets();
+  let target = resolveLiveTarget(source, targets);
+
+  // Absent from the capture list? The window may just be minimized. Un-minimize
+  // it — which is what activating the source is asking for anyway — and look
+  // again, rather than reporting a source that is perfectly fine as unbound.
+  if (!target) {
+    const hidden = await minimizedMatcher()(source);
+    if (hidden) {
+      await restoreWindow(hidden.hwnd);
+      // Give the compositor a moment; a window that has only just been restored
+      // can still be missing from the next enumeration.
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      targets = await listCaptureTargets();
+      target = resolveLiveTarget(source, targets);
+    }
+  }
+
+  const liveId = target ? target.id : null;
 
   config.activeSourceId = sourceId;
 
@@ -272,6 +382,8 @@ async function activateSource(sourceId) {
 
   // Remember the resolved id for the fast path within this session.
   source.lastSourceId = liveId;
+
+  snapSourceWindow(source, liveId);
 
   if (outputWin && !outputWin.isDestroyed()) {
     outputWin.webContents.send('output:show', {
@@ -311,7 +423,16 @@ function reloadHotkeys() {
 // ---------------------------------------------------------------------------
 
 function registerIpc() {
-  ipcMain.handle('sources:list', () => listCaptureTargets({ withProcess: true }));
+  ipcMain.handle('sources:list', async () => {
+    const targets = await listCaptureTargets({ withProcess: true });
+    // Include minimized windows so Control doesn't flag a perfectly good source
+    // as "needs rebinding" just because its window is minimized. They have no
+    // capture id, so the picker leaves them out of the selectable tiles.
+    if (process.platform === 'win32') {
+      targets.push(...await shapeMinimized(await listMinimizedWindows(), { withProcess: true }));
+    }
+    return targets;
+  });
 
   ipcMain.handle('config:get', () => config);
 
@@ -319,25 +440,33 @@ function registerIpc() {
     config = { ...config, ...next };
     saveConfig(config);
     reloadHotkeys();
+    sendOutputStyle();
     if (deckWin && !deckWin.isDestroyed()) deckWin.webContents.send('deck:refresh');
     return { ok: true, path: configPath() };
   });
 
   ipcMain.handle('source:activate', (_evt, sourceId) => activateSource(sourceId));
 
+  // Control calls this when binding a window target, to remember the size that
+  // activating the source should later restore it to.
+  ipcMain.handle('window:rect', (_evt, hwnd) => getWindowRect(hwnd));
+
   // Deck: a source list joined with each source's resolved live thumbnail.
   ipcMain.handle('deck:sources', async () => {
     const targets = await listCaptureTargets();
+    const findHidden = minimizedMatcher(); // only enumerates if something misses
     const out = [];
     for (const s of config.sources || []) {
-      const liveId = await resolveLiveId(s, targets);
-      const t = liveId ? targets.find((x) => x.id === liveId) : null;
+      const t = resolveLiveTarget(s, targets) || await findHidden(s);
       out.push({
         id: s.id,
         name: s.name,
         hotkey: s.hotkey || '',
         thumb: t ? t.thumbnailDataURL : null,
         bound: !!t,
+        // Still bound, just not capturable until it is restored — which
+        // clicking the tile does.
+        minimized: !!(t && t.minimized),
         active: config.activeSourceId === s.id,
       });
     }
@@ -444,7 +573,10 @@ app.whenReady().then(() => {
   });
 });
 
-app.on('will-quit', () => globalShortcut.unregisterAll());
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
+  shutdownWinControl();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();

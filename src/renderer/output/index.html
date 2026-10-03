@@ -7,19 +7,24 @@
   <link rel="stylesheet" href="output.css" />
 </head>
 <body>
-  <!-- Frameless windows can't be moved by an OS title bar; this transparent
-       strip is a draggable handle so the user can still reposition the window.
-       It's invisible, so it never shows up in the shared view. -->
-  <div id="dragbar" class="dragbar" title="Drag to move ScreenDeck"></div>
-  <canvas id="stage"></canvas>
-  <div id="placeholder" class="placeholder">
-    <div class="ph-box">
-      <h1>ScreenDeck Output</h1>
-      <p>Share <strong>this window</strong> in Zoom / Teams / Meet.</p>
-      <p class="muted">Then press your hotkeys (Ctrl+F1, Ctrl+F2, …) to switch what appears here.</p>
+  <!-- Everything lives inside the frame: its border is the configurable
+       outline (white by default) drawn around the shared picture, and
+       border-box sizing keeps the canvas and overlays inside it. -->
+  <div id="frame" class="frame">
+    <!-- Frameless windows can't be moved by an OS title bar; this transparent
+         strip is a draggable handle so the user can still reposition the window.
+         It's invisible, so it never shows up in the shared view. -->
+    <div id="dragbar" class="dragbar" title="Drag to move ScreenDeck"></div>
+    <canvas id="stage"></canvas>
+    <div id="placeholder" class="placeholder">
+      <div class="ph-box">
+        <h1>ScreenDeck Output</h1>
+        <p>Share <strong>this window</strong> in Zoom / Teams / Meet.</p>
+        <p class="muted">Then press your hotkeys (Ctrl+F1, Ctrl+F2, …) to switch what appears here.</p>
+      </div>
     </div>
+    <div id="banner" class="banner hidden"></div>
   </div>
-  <div id="banner" class="banner hidden"></div>
   <script src="output.js"></script>
 </body>
 </html>

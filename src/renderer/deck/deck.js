@@ -50,8 +50,17 @@ function updateTile(t, s) {
   t.hk.textContent = prettyHotkey(s.hotkey);
   t.hk.style.display = s.hotkey ? '' : 'none';
   t.el.classList.toggle('unbound', !s.bound);
+  t.el.classList.toggle('minimized', !!s.minimized);
 
-  if (s.bound && s.thumb) {
+  if (s.minimized) {
+    // A minimized window can't be captured (so there's no thumbnail) but it is
+    // still bound — clicking the tile restores it and shows it.
+    if (t.lastThumb !== 'MIN') {
+      t.thumb.style.backgroundImage = 'none';
+      t.thumb.innerHTML = '<span class="ph">minimized —<br>click to show</span>';
+      t.lastThumb = 'MIN';
+    }
+  } else if (s.bound && s.thumb) {
     // Only touch the DOM when the image actually changed (avoids flicker).
     if (t.lastThumb !== s.thumb) {
       t.thumb.style.backgroundImage = `url("${s.thumb}")`;
